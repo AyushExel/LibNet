@@ -333,35 +333,3 @@ auto Network::setIO(const Mat<double>&a , const Mat<double>&b){
 
 
 
-
-int main(){
-epsilon = 0.01;
-arma:mat dataset,out;
-dataset.load("train.csv");
-out.load("trainTarget.csv");
-
- vector<pair<double,double>>acc;
- vector<double>costs;
- double lambda = 0.0003,alpha = 0.024 , accuracy = 0,cost = 1000,add = 0.0002;
- //while(true){
-    Network net({7352,561},{7352,6},"relu",lambda,alpha);
-    net.setIO(dataset,out);
-    net.addFCLayer({7352,90});
-    net.addFCLayer({7352,6});
-    //net.displayDimensions();
-    net.gradientDescent(200);
-  /*  auto a1 = net.accuracy(), c1 = net.cost();
-    cout << "accuracy => " << a1 << endl;
-    if(a1>accuracy){
-      accuracy = a1;
-      cost = c1;
-      acc.push_back(make_pair(alpha,accuracy));
-      alpha += add;
-    }else{
-       alpha = acc.at(acc.size()-1).first;
-       add /= 10;
-       alpha += add;
-    }*/
- //}
-    return 0;
-}
