@@ -1,77 +1,7 @@
-#include <iostream>
-#include <armadillo>
-#include <vector>
-#include <utility>
-#include <tuple>
-#include <memory>
-#include <sstream>
-#include <list>
-#include <random>
-#include <cmath>
-using namespace std;
-using namespace arma;
-
-  double epsilon = 0.01;
-
-
-class Network{
-public:
-  /*
-  Constructors
-  */
-
-  //Initialize the input using size provided
-  Network(const tuple<int,int>&,const tuple<int,int>&,const string&,const double&,const double& ); 
-
-  //Network(Mat& input); Implement this constructor as well
-
-  Network(const Network&); //Copy Constructor
+#include "network.h"
 
 
 
-  auto addFCLayer(const tuple<int,int>&); //add a layer of specified size and respective weights initialized from uniform random distribution
-  
-  auto addFCLayer(Network&); //Add pre-Exisiting network to this layer
-  auto setIO(const Mat<double>& , const Mat<double>&);
-
-
-  Mat<double>& relu(Mat<double>&); //relu activation function
-
-  auto reluGrad(Mat<double>&); //Gradient of relu 
-
-  auto softmax(Mat<double>&); //relu activation function
-  /*
-    Overload this function or add more parameters for making it dimension friendly
-  */
-  auto forwardProp(); //For forward propagating the Network
-  auto backProp();
-  auto gradientDescent(const int&); 
-
-  double cost(); //To calculate the cost function
-  double accuracy();
-  auto displayDimensions(); //To display the dimensions of the Network
-  /* Debug function to access private members 
-    DELETE THIS WHEN DONE DEBUGGING */
-  auto debug();
-private:
-  shared_ptr<vector<Mat<double>>> layerInputs; // input of each Layer
-
-  shared_ptr<vector<Mat<double>>> layerWeights; //  weights of each layer
-
-  shared_ptr<vector<Mat<double>>> layerActivations; //activations for each Layer
-
-  shared_ptr<vector<Mat<double>>> layerSigmas; // derivatives w.r.t layers(inputs)
-
-  shared_ptr<vector<Mat<double>>> layerGradients; //derivatives w.r.t weights
-
-  Mat<double> outputs;                         //the target values
-
-  double lambda;                               //Regularization Parameter
-  double alpha;                                // learning Rate
- // shared_ptr<vector<Mat<double>>> layerBiases; // the bias units for each layer
-  string activation; // the activaion function to be used
-};
-//Intialize using 3d Mat to retain flexibility for conv nets
 Network::Network(const tuple<int,int>& insize,const tuple<int,int>& outsize,const string& act = "relu",const double& lamb = 0.5,const double& alph = 0.1):
 
 layerInputs(make_shared<vector<Mat<double>>>(vector<Mat<double>>({Mat<double>(get<0>(insize),get<1>(insize))}))),
@@ -259,7 +189,8 @@ auto Network::backProp(){
 }
 
 //Gradient Descenet
-auto Network::gradientDescent(const int& epoch){
+auto Network::gradientDescent(const int& epoch,const int& bachSize=0){
+ 
  for(auto i=1;i<=epoch;i++){
    // Forward pass , print cost and Backward pass
 
@@ -271,7 +202,7 @@ auto Network::gradientDescent(const int& epoch){
    for(auto i = 0;i<layerWeights->size();i++){
       layerWeights->at(i) = layerWeights->at(i) - alpha* layerGradients->at(i);
    }
-  //clear the vectors
+  //clear the vectors except weigths if this is not the last iteration
   if(i<epoch){
   layerActivations->clear();
   layerSigmas->clear();
@@ -279,6 +210,39 @@ auto Network::gradientDescent(const int& epoch){
   }
  }
  
+// IMPLEMENT STACHAISTIC GRADIENT DESCENT
+}
+
+auto Network::momentum(const int& epoch,const double& mu=0.9){
+  /* MOMENTUM UPDATE THEROY:-
+     v,the velocity vector is initialized to 0
+     v(n) =v(n)*mu - alpha*gradient(n)
+     weights(n) += v(n)
+  */
+  auto velocity = *layerWeights; //Initialize with vector of matrices with dimensions of weights 
+  
+  //Make the velocites 0
+  for(auto i = velocity.begin();i!=velocity.end();i++)
+      *i = (*i)*0;
+  
+  //perform MOMENTUM Update:-
+  for(auto i = 1;i<=epoch;i++){
+    forwardProp();
+    cout << "iteration " << i << "cost => " << cost() << "accuracy => " << accuracy() <<endl;
+    backProp();
+    for(int i=0;i<velocity.size()-1;i++){
+
+      velocity.at(i) = velocity.at(i)*mu - alpha*layerGradients->at(i);
+      layerWeights->at(i) += velocity.at(i);
+      }
+    //clear the vectors except weigths if this is not the last iteration
+    if(i<epoch){
+    layerActivations->clear();
+    layerSigmas->clear();
+    layerGradients->clear();
+  }
+  }
+
 }
 
 //Calculate softmax cost function with regularization 
@@ -302,6 +266,7 @@ double Network::cost(){
   return cost;
 }
 
+//To calculate and return the accuracy of the model
 double Network::accuracy(){
   auto pred = layerActivations->at(layerActivations->size()-1);
   auto count = 0.0;
@@ -329,7 +294,4 @@ auto Network::setIO(const Mat<double>&a , const Mat<double>&b){
   layerInputs->at(0) = a;
   outputs = b;
 }
-
-
-
 
