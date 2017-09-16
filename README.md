@@ -1,6 +1,6 @@
 # LibNet
 Portable Deep Learning algorithms library for c++ from scratch 
 
-# Fully Connected Neural networks available
+ Fully Connected Neural networks available
 
-# Convolutional neural networks under development
+***Convolutional neural networks under development***
